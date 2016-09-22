@@ -1,4 +1,4 @@
-from math import ceil, hypot
+from math import ceil, hypot, cos, radians, sin
 
 
 def thin(points):
@@ -106,6 +106,36 @@ def hough(points):
         if point[1] > height:
             height = point[1]
 
-    accum = [[0 for x in range(0, width + 1)] for y in range(0, height + 1)]
+    max_dist = ceil(hypot(width, height))
+    accum = [[0 for x in range(-90, 90)] for y in range(-max_dist, max_dist + 1)]
 
-    max_dist = hypot(width, height)
+    for point in points:
+        for theta in range(-90, 90):
+            r = round(point[0] * cos(radians(theta)) + point[1] * sin(radians(theta)))
+            accum[r + max_dist][theta + 90] += 1
+
+    return accum
+
+
+def hough_points(accum, threshold=100):
+    points = []
+
+    for y in range(len(accum)):
+        for x in range(len(accum[y])):
+            if accum[y][x] >= threshold:
+                for ty in range(-1, 2):
+                    for tx in range(-1, 2):
+                        if not (ty == 0 and tx == 0) and 0 <= x + tx < len(accum[y]) and 0 <= y + ty < len(accum):
+                            if accum[y][x] <= accum[y + ty][x + tx]:
+                                accum[y][x] = 0
+
+                if accum[y][x] != 0:
+                    points.append((x - 90, y - len(accum) // 2))
+
+    return points
+
+
+def hough_lines(points):
+    lines = []
+
+

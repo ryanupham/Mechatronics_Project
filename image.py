@@ -1,7 +1,8 @@
 import time
 from PIL import Image
+from math import cos, radians, sin
 
-from points import thin
+from points import thin, hough, hough_points
 
 
 def color_match(c1, c2, tol):
@@ -31,6 +32,7 @@ def find_colors_tolerance(img, col, tol):
     return matches
 
 img = Image.open("./images/signs.jpg")
+img_pixels = img.load()
 
 start = time.time()
 matches = find_colors_tolerance(img, (214, 69, 66), 20)
@@ -40,9 +42,37 @@ start = time.time()
 matches = thin(matches)
 print(time.time() - start)
 
-print(len(matches))
-
 for match in matches:
-    img.im.putpixel(match, 0)
+    img_pixels[match] = 0
 
 img.save("test.bmp")
+
+start = time.time()
+accum = hough(matches)
+print(time.time() - start)
+
+h = Image.new("RGB", (len(accum[0]), len(accum)), "black")
+hough_pixels = h.load()
+
+for y, line in enumerate(accum):
+    for x, intensity in enumerate(line):
+        hough_pixels[x, y] = (intensity * 2, intensity * 2, intensity * 2)
+
+start = time.time()
+hp = hough_points(accum)
+print(time.time() - start)
+
+h.save("hough.bmp")
+
+for point in hp:
+    theta, r = point
+    px, py = cos(radians(theta)) * r, sin(radians(theta)) * r
+    slope = sin(radians(theta + 90)) / cos(radians(theta + 90))
+
+    for x in range(img.size[0]):
+        y = slope * (x - px) + py
+
+        if 0 <= x < img.size[0] and 0 <= y < img.size[1]:
+            img_pixels[x, y] = (0, 0, 255)
+
+img.save("hough_lines.bmp")
