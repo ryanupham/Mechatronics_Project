@@ -6,6 +6,8 @@ def distance(p1, p2):
 
 
 def thin(points):
+    points = points[:]
+    pl = len(points)
     width, height = 0, 0
 
     for point in points:
@@ -18,78 +20,105 @@ def thin(points):
     height += 2
 
     pixels = [[False for x in range(0, width + 1)] for y in range(0, height + 1)]
+    marked = [[False for x in range(0, width + 1)] for y in range(0, height + 1)]
 
-    for point in points:
-        pixels[point[1]][point[0]] = True
+    for x, y in points:
+        pixels[y][x] = True
+
+    for x, y in points:
+        for tx in range(-1, 2):
+            for ty in range(-1, 2):
+                if not pixels[y + ty][x + tx]:
+                    marked[y][x] = True
 
     check = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
 
     trimmed = True
-
-    c = 1
+    flags = []
 
     while trimmed:
-        trimmed = False
+        flags.clear()
 
-        flags = []
+        ind = 0
 
-        for y in range(1, height - 1):
-            for x in range(1, width - 1):
-                if not pixels[y][x]:
-                    continue
+        while ind < pl:
+            count = 0
+            trans = 0
+            x, y = points[ind]
 
-                count = 0
-                trans = 0
+            if not marked[y][x]:
+                ind += 1
+                continue
 
-                for i in range(len(check)):
-                    if pixels[y + check[i][1]][x + check[i][0]]:
-                        count += 1
-                    if i > 0:
-                        if pixels[y + check[i][1]][x + check[i][0]] != pixels[y + check[i - 1][1]][x + check[i - 1][0]]:
-                            trans += 1
+            for i in range(len(check)):
+                if pixels[y + check[i][1]][x + check[i][0]]:
+                    count += 1
+                if i > 0:
+                    if pixels[y + check[i][1]][x + check[i][0]] != pixels[y + check[i - 1][1]][x + check[i - 1][0]]:
+                        trans += 1
 
-                if 2 <= count <= 6:
-                    if ceil(trans / 2.0) == 1:
-                        if pixels[y + check[4][1]][x + check[4][0]] == False or \
-                           pixels[y + check[2][1]][x + check[2][0]] == False or \
-                           (pixels[y + check[0][1]][x + check[0][0]] == False and
-                           (pixels[y + check[2][1]][x + check[2][0]] == False or
-                           pixels[y + check[6][1]][x + check[6][0]] == False)):
-                            flags.append((x, y))
-                            trimmed = True
+            if (2 <= count <= 6) and ceil(trans / 2) == 1:
+                if pixels[y + check[4][1]][x + check[4][0]] == False or \
+                   pixels[y + check[2][1]][x + check[2][0]] == False or \
+                   (pixels[y + check[0][1]][x + check[0][0]] == False and
+                   (pixels[y + check[2][1]][x + check[2][0]] == False or
+                   pixels[y + check[6][1]][x + check[6][0]] == False)):
+                    flags.append((x, y))
+                    pl -= 1
+                    points[ind] = points[pl]
+                    ind -= 1
+
+                    for tx in range(-1, 2):
+                        for ty in range(-1, 2):
+                            marked[y + ty][x + tx] = True
+
+            ind += 1
+
+        for ind in flags:
+            pixels[ind[1]][ind[0]] = False
+
+        trimmed = len(flags) > 0
+        flags.clear()
+
+        ind = 0
+
+        while ind < pl:
+            count = 0
+            trans = 0
+            x, y = points[ind]
+
+            if not marked[y][x]:
+                ind += 1
+                continue
+
+            for i in range(len(check)):
+                if pixels[y + check[i][1]][x + check[i][0]]:
+                    count += 1
+                if i > 0:
+                    if pixels[y + check[i][1]][x + check[i][0]] != pixels[y + check[i - 1][1]][x + check[i - 1][0]]:
+                        trans += 1
+
+            if (2 <= count <= 6) and ceil(trans / 2) == 1:
+                if pixels[y + check[0][1]][x + check[0][0]] == False or \
+                   pixels[y + check[6][1]][x + check[6][0]] == False or \
+                   (pixels[y + check[4][1]][x + check[4][0]] == False and
+                   (pixels[y + check[2][1]][x + check[2][0]] == False or
+                   pixels[y + check[6][1]][x + check[6][0]] == False)):
+                    flags.append((x, y))
+                    pl -= 1
+                    points[ind] = points[pl]
+                    ind -= 1
+
+                    for tx in range(-1, 2):
+                        for ty in range(-1, 2):
+                            marked[y + ty][x + tx] = True
+
+            ind += 1
 
         for ind in flags:
             pixels[ind[1]][ind[0]] = False
 
-        flags = []
-
-        for y in range(1, height - 1):
-            for x in range(1, width - 1):
-                if not pixels[y][x]:
-                    continue
-
-                count = 0
-                trans = 0
-
-                for i in range(len(check)):
-                    if pixels[y + check[i][1]][x + check[i][0]]:
-                        count += 1
-                    if i > 0:
-                        if pixels[y + check[i][1]][x + check[i][0]] != pixels[y + check[i - 1][1]][x + check[i - 1][0]]:
-                            trans += 1
-
-                if 2 <= count <= 6:
-                    if ceil(trans / 2.0) == 1:
-                        if pixels[y + check[0][1]][x + check[0][0]] == False or \
-                           pixels[y + check[6][1]][x + check[6][0]] == False or \
-                           (pixels[y + check[4][1]][x + check[4][0]] == False and
-                           (pixels[y + check[2][1]][x + check[2][0]] == False or
-                           pixels[y + check[6][1]][x + check[6][0]] == False)):
-                            flags.append((x, y))
-                            trimmed = True
-
-        for ind in flags:
-            pixels[ind[1]][ind[0]] = False
+        trimmed = trimmed or len(flags) > 0
 
     thinned_points = []
 

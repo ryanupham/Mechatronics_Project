@@ -46,7 +46,7 @@ print(time.time() - start)
 for match in matches:
     img_pixels[match] = 0
 
-img.save("test.bmp")
+img.save("thin.bmp")
 
 start = time.time()
 accum = hough(matches)
