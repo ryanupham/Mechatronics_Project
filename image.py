@@ -1,8 +1,9 @@
 import time
-from PIL import Image
-from math import cos, radians, sin
 
-from points import thin, hough, hough_points
+from PIL import Image
+
+from lines import intersection, hough_lines, find_triangles
+from points import thin, hough, hough_points, trim_close_points
 
 
 def color_match(c1, c2, tol):
@@ -64,15 +65,37 @@ print(time.time() - start)
 
 h.save("hough.bmp")
 
-for point in hp:
-    theta, r = point
-    px, py = cos(radians(theta)) * r, sin(radians(theta)) * r
-    slope = sin(radians(theta + 90)) / cos(radians(theta + 90))
+lines = hough_lines(hp)
 
+for line in lines:
     for x in range(img.size[0]):
-        y = slope * (x - px) + py
+        y = line[0] * x + line[1]
 
         if 0 <= x < img.size[0] and 0 <= y < img.size[1]:
             img_pixels[x, y] = (0, 0, 255)
+
+intersections = []
+
+for ind, line1 in enumerate(lines[:-1]):
+    for line2 in lines[ind + 1:]:
+        p = intersection(line1, line2)
+
+        if p is not None:
+            intersections.append(p)
+
+intersections = [(x, y) for x, y in intersections if 0 <= x < img.size[0] and 0 <= y < img.size[1]]
+
+for x, y in intersections:
+    for tx in range(-1, 2):
+        for ty in range(-1, 2):
+            img_pixels[x + tx, y + ty] = (255, 255, 255)
+
+triangles = find_triangles(intersections)
+trim_close_points(triangles)
+
+for x, y, size in triangles:
+    for tx in range(-2, 3):
+        for ty in range(-2, 3):
+            img_pixels[x + tx, y + ty] = (50, 200, 50)
 
 img.save("hough_lines.bmp")

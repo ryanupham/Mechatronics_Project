@@ -1,6 +1,10 @@
 from math import ceil, hypot, cos, radians, sin
 
 
+def distance(p1, p2):
+    return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
+
+
 def thin(points):
     width, height = 0, 0
 
@@ -135,7 +139,12 @@ def hough_points(accum, threshold=100):
     return points
 
 
-def hough_lines(points):
-    lines = []
+def trim_close_points(points, dist=7):
+    ind = 0
 
+    while ind < len(points):
+        for p in points[ind + 1:]:
+            if distance(points[ind], p) <= dist:
+                points.remove(p)
 
+        ind += 1
